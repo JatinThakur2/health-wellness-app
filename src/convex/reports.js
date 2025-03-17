@@ -1,4 +1,4 @@
-import { query, action } from "./_generated/server";
+import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 
@@ -15,8 +15,8 @@ export const getReports = query({
   },
 });
 
-// Improved requestReport action with better error handling
-export const requestReport = action({
+// Using a mutation instead of an action with correct function references
+export const requestReport = mutation({
   args: {
     userId: v.id("users"),
     reportType: v.string(),
@@ -24,30 +24,123 @@ export const requestReport = action({
     endDate: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    console.log("Checking ctx.db:", ctx.db); // Add this line
-
-    if (!ctx.db) {
-      throw new Error("Database instance is undefined. Check Convex setup.");
-    }
-
     const { userId, reportType, startDate, endDate } = args;
 
-    try {
-      console.log("Attempting to insert into 'reports' collection...");
+    // Create a report record with pending status
+    const reportId = await ctx.db.insert("reports", {
+      userId,
+      generatedAt: Date.now(),
+      reportType,
+      status: "pending",
+    });
 
-      const reportId = await ctx.db.insert("reports", {
+    // Schedule processing via the correct function names
+    if (reportType === "weekly") {
+      await ctx.scheduler.runAfter(0, internal.reports.generateWeeklyReport, {
         userId,
-        generatedAt: Date.now(),
-        reportType,
-        status: "pending",
+        reportId,
+      });
+    } else {
+      // For custom date range reports
+      await ctx.scheduler.runAfter(0, internal.reports.generateCustomReport, {
+        userId,
+        reportId,
+        startDate,
+        endDate,
+      });
+    }
+
+    return reportId;
+  },
+});
+
+// Add these functions for completeness if they don't exist elsewhere
+export const generateWeeklyReport = mutation({
+  args: {
+    userId: v.id("users"),
+    reportId: v.id("reports"),
+  },
+  handler: async (ctx, { userId, reportId }) => {
+    console.log(`Starting weekly report generation for report: ${reportId}`);
+
+    try {
+      // Update report status to processing
+      await ctx.db.patch(reportId, {
+        status: "processing",
       });
 
-      console.log("Inserted Report ID:", reportId);
+      console.log(`Updated status to processing for report: ${reportId}`);
+
+      // Simulate report generation
+      console.log(`Generating report content for: ${reportId}`);
+
+      // Create a dummy URL for testing
+      const reportUrl = "https://example.com/sample-report.pdf";
+
+      // Update the report with URL and set status to completed
+      await ctx.db.patch(reportId, {
+        reportUrl,
+        status: "completed",
+      });
+
+      console.log(`Updated status to completed for report: ${reportId}`);
 
       return reportId;
     } catch (error) {
-      console.error("Error in requestReport action:", error);
-      throw new Error(`Failed to request report: ${error.message}`);
+      console.error(`Error generating report ${reportId}:`, error);
+
+      // Update report status to failed
+      await ctx.db.patch(reportId, {
+        status: "failed",
+      });
+
+      throw error;
+    }
+  },
+});
+
+export const generateCustomReport = mutation({
+  args: {
+    userId: v.id("users"),
+    reportId: v.id("reports"),
+    startDate: v.optional(v.number()),
+    endDate: v.optional(v.number()),
+  },
+  handler: async (ctx, { userId, reportId, startDate, endDate }) => {
+    console.log(`Starting weekly report generation for report: ${reportId}`);
+
+    try {
+      // Update report status to processing
+      await ctx.db.patch(reportId, {
+        status: "processing",
+      });
+
+      console.log(`Updated status to processing for report: ${reportId}`);
+
+      // Simulate report generation
+      console.log(`Generating report content for: ${reportId}`);
+
+      // Create a dummy URL for testing
+      const reportUrl = "https://example.com/sample-report.pdf";
+
+      // Update the report with URL and set status to completed
+      await ctx.db.patch(reportId, {
+        reportUrl,
+        status: "completed",
+      });
+
+      console.log(`Updated status to completed for report: ${reportId}`);
+
+      return reportId;
+    } catch (error) {
+      console.error(`Error generating report ${reportId}:`, error);
+
+      // Update report status to failed
+      await ctx.db.patch(reportId, {
+        status: "failed",
+      });
+
+      throw error;
     }
   },
 });

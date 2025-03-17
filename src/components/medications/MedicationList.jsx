@@ -12,6 +12,7 @@ import {
   Button,
   Chip,
   IconButton,
+  Tooltip,
   Dialog,
   DialogActions,
   DialogContent,
@@ -217,30 +218,36 @@ const MedicationList = () => {
                 secondaryAction={
                   <Box>
                     {!medication.isCompleted && (
+                      <Tooltip title="Mark as Taken" arrow placement="top">
+                        <IconButton
+                          edge="end"
+                          aria-label="mark as taken"
+                          onClick={() => handleMarkAsTakenClick(medication)}
+                          sx={{ mr: 1 }}
+                        >
+                          <CheckCircleIcon color="success" />
+                        </IconButton>
+                      </Tooltip>
+                    )}
+                    <Tooltip title="Edit" arrow placement="top">
                       <IconButton
                         edge="end"
-                        aria-label="mark as taken"
-                        onClick={() => handleMarkAsTakenClick(medication)}
+                        aria-label="edit"
                         sx={{ mr: 1 }}
+                        // TODO: Implement edit functionality
                       >
-                        <CheckCircleIcon color="success" />
+                        <EditIcon color="primary" />
                       </IconButton>
-                    )}
-                    <IconButton
-                      edge="end"
-                      aria-label="edit"
-                      sx={{ mr: 1 }}
-                      // TODO: Implement edit functionality
-                    >
-                      <EditIcon color="primary" />
-                    </IconButton>
-                    <IconButton
-                      edge="end"
-                      aria-label="delete"
-                      onClick={() => handleDeleteClick(medication)}
-                    >
-                      <DeleteIcon color="error" />
-                    </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Delete" arrow placement="top">
+                      <IconButton
+                        edge="end"
+                        aria-label="delete"
+                        onClick={() => handleDeleteClick(medication)}
+                      >
+                        <DeleteIcon color="error" />
+                      </IconButton>
+                    </Tooltip>
                   </Box>
                 }
               >

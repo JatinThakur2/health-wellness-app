@@ -17,6 +17,14 @@ import {
   IconButton,
   Menu,
   MenuItem,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  TextField,
+  Snackbar,
+  Alert,
 } from "@mui/material";
 import Grid from "@mui/material/Grid2";
 import {
@@ -35,6 +43,14 @@ const Dashboard = () => {
   const isMenuOpen = Boolean(anchorEl);
   const { user, logout: authLogout, sessionId } = useAuth();
 
+  // Move these inside the component function
+  const [markAsTakenDialogOpen, setMarkAsTakenDialogOpen] = useState(false);
+  const [selectedMedication, setSelectedMedication] = useState(null);
+  const [notes, setNotes] = useState("");
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [snackbarSeverity, setSnackbarSeverity] = useState("success");
+
   const medications = useQuery(
     api.medications.getMedications,
     user ? { userId: user._id } : "skip"
@@ -47,6 +63,47 @@ const Dashboard = () => {
   const logoutMutation = useMutation(api.auth.logout);
   const logoutAll = useMutation(api.auth.logoutAll);
   const logoutOthers = useMutation(api.auth.logoutOthers);
+  const markMedicationAsDone = useMutation(
+    api.medications.markMedicationAsDone
+  );
+
+  // Move these handler functions inside the component
+  const handleMarkAsTakenClick = (medication) => {
+    setSelectedMedication(medication);
+    setNotes("");
+    setMarkAsTakenDialogOpen(true);
+  };
+
+  const handleMarkAsTakenConfirm = async () => {
+    if (!selectedMedication) return;
+
+    try {
+      await markMedicationAsDone({
+        medicationId: selectedMedication._id,
+        userId: user._id,
+        notes: notes,
+      });
+      setSnackbarMessage("Medication marked as taken");
+      setSnackbarSeverity("success");
+    } catch (error) {
+      console.error("Error marking medication as taken:", error);
+      setSnackbarMessage("Error marking medication as taken: " + error.message);
+      setSnackbarSeverity("error");
+    }
+
+    setSnackbarOpen(true);
+    setMarkAsTakenDialogOpen(false);
+    setSelectedMedication(null);
+  };
+
+  const handleMarkAsTakenCancel = () => {
+    setMarkAsTakenDialogOpen(false);
+    setSelectedMedication(null);
+  };
+
+  const handleSnackbarClose = () => {
+    setSnackbarOpen(false);
+  };
 
   const handleProfileMenuOpen = (event) => {
     setAnchorEl(event.currentTarget);
@@ -229,6 +286,7 @@ const Dashboard = () => {
                             variant="outlined"
                             size="small"
                             color="primary"
+                            onClick={() => handleMarkAsTakenClick(med)}
                           >
                             Mark as Taken
                           </Button>
@@ -329,6 +387,58 @@ const Dashboard = () => {
           </Grid>
         </Grid>
       </Container>
+
+      {/* Mark as Taken Dialog - move outside the map function */}
+      <Dialog open={markAsTakenDialogOpen} onClose={handleMarkAsTakenCancel}>
+        <DialogTitle>Mark as Taken</DialogTitle>
+        <DialogContent>
+          <DialogContentText sx={{ mb: 2 }}>
+            Confirm that you've taken "{selectedMedication?.medicineName}". You
+            can add optional notes below.
+          </DialogContentText>
+          <TextField
+            autoFocus
+            margin="dense"
+            id="notes"
+            label="Notes (optional)"
+            fullWidth
+            variant="outlined"
+            multiline
+            rows={3}
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleMarkAsTakenCancel}>Cancel</Button>
+          <Button
+            onClick={handleMarkAsTakenConfirm}
+            color="primary"
+            variant="contained"
+          >
+            Confirm
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Snackbar for notifications - move outside the map function */}
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={6000}
+        onClose={handleSnackbarClose}
+        anchorOrigin={{
+          vertical: "bottom",
+          horizontal: "center",
+        }}
+      >
+        <Alert
+          onClose={handleSnackbarClose}
+          severity={snackbarSeverity}
+          sx={{ width: "100%" }}
+        >
+          {snackbarMessage}
+        </Alert>
+      </Snackbar>
     </>
   );
 };

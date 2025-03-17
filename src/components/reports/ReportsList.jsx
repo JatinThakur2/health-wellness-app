@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useQuery, useAction } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import {
   Box,
   Typography,
@@ -43,7 +43,8 @@ const ReportsList = () => {
 
   const reports =
     useQuery(api.reports.getReports, userId ? { userId } : "skip") || [];
-  const requestReport = useAction(api.reports.requestReport);
+  // Changed from useAction to useMutation
+  const requestReport = useMutation(api.reports.requestReport);
 
   // State for the new report dialog
   const [openDialog, setOpenDialog] = useState(false);
@@ -123,6 +124,7 @@ const ReportsList = () => {
         return type;
     }
   };
+
   return (
     <Box sx={{ mt: 3 }}>
       <Box
@@ -306,5 +308,11 @@ const ReportsList = () => {
     </Box>
   );
 };
-
+console.log("Available API actions:", api);
+// In ReportsList.jsx, temporarily add:
+console.log("API structure:", JSON.stringify(Object.keys(api), null, 2));
+console.log(
+  "Action structure:",
+  JSON.stringify(Object.keys(api.action || {}), null, 2)
+);
 export default ReportsList;
