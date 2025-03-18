@@ -141,11 +141,103 @@ const MedicationList = () => {
     return "";
   };
 
+  // Helper to determine if medication can be taken today
+  const canBeTakenToday = (medication) => {
+    // First check the computed property from the backend
+    if (!medication.needsTakingToday) {
+      return false;
+    }
+
+    // For one-time medications, just check if it's not completed
+    if (medication.reminderType === "one-time") {
+      return !medication.isCompleted;
+    }
+
+    // For recurring medications, additional check if it's scheduled for today
+    if (medication.reminderType === "recurring") {
+      const today = new Date();
+      const startDate = new Date(medication.startDate);
+      const endDate = new Date(medication.endDate);
+
+      // Check if today is within the date range
+      if (today < startDate || today > endDate) {
+        return false;
+      }
+
+      // For daily medication
+      if (medication.frequency === "daily") {
+        return true;
+      }
+
+      // For weekly medication
+      if (medication.frequency === "weekly") {
+        const daysOfWeek = [
+          "sunday",
+          "monday",
+          "tuesday",
+          "wednesday",
+          "thursday",
+          "friday",
+          "saturday",
+        ];
+        return daysOfWeek[today.getDay()] === medication.dayOfWeek;
+      }
+    }
+
+    return false;
+  };
+
+  // Show taken status for recurring medications
+  const getMedicationStatus = (medication) => {
+    if (medication.reminderType === "one-time") {
+      return medication.isCompleted ? "Completed" : "Pending";
+    } else {
+      // For recurring medications
+      if (!medication.lastTakenAt) {
+        return "Never taken";
+      }
+
+      const lastTakenDate = new Date(medication.lastTakenAt);
+      const today = new Date();
+
+      const takenToday =
+        lastTakenDate.getFullYear() === today.getFullYear() &&
+        lastTakenDate.getMonth() === today.getMonth() &&
+        lastTakenDate.getDate() === today.getDate();
+
+      if (takenToday) {
+        return "Taken today";
+      } else {
+        return `Last taken: ${format(lastTakenDate, "PP")}`;
+      }
+    }
+  };
+
   // Filter medications based on selected tab
   const filteredMedications = medications?.filter((med) => {
-    if (tabValue === 0) return true; // All medications
-    if (tabValue === 1) return !med.isCompleted; // Active medications
-    if (tabValue === 2) return med.isCompleted; // Completed medications
+    if (tabValue === 0) return true;
+    if (tabValue === 1) {
+      // Active medications
+      if (med.reminderType === "one-time") {
+        return !med.isCompleted;
+      } else {
+        // For recurring, show if it's still in the valid date range
+        const today = new Date();
+        const endDate = new Date(med.endDate);
+        return today <= endDate;
+      }
+    }
+    if (tabValue === 2) {
+      // Completed medications
+      if (med.reminderType === "one-time") {
+        return med.isCompleted;
+      } else {
+        // For recurring, show if it's past the end date
+        const today = new Date();
+        const endDate = new Date(med.endDate);
+        return today > endDate;
+      }
+    }
     return true;
   });
 
@@ -175,7 +267,7 @@ const MedicationList = () => {
           color="primary"
           startIcon={<RefreshIcon />}
           onClick={() => {
-            // This will trigger a refetch due to the query hook
+            // trigger a refetch due to the query hook
             setSnackbarMessage("Medications refreshed");
             setSnackbarSeverity("info");
             setSnackbarOpen(true);
@@ -217,7 +309,7 @@ const MedicationList = () => {
                 }}
                 secondaryAction={
                   <Box>
-                    {!medication.isCompleted && (
+                    {canBeTakenToday(medication) && (
                       <Tooltip title="Mark as Taken" arrow placement="top">
                         <IconButton
                           edge="end"
@@ -275,6 +367,23 @@ const MedicationList = () => {
                           medication.reminderType === "one-time"
                             ? "secondary"
                             : "primary"
+                        }
+                        size="small"
+                        sx={{ ml: 1 }}
+                      />
+                      <Chip
+                        label={getMedicationStatus(medication)}
+                        color={
+                          medication.reminderType === "one-time"
+                            ? medication.isCompleted
+                              ? "success"
+                              : "warning"
+                            : medication.lastTakenAt &&
+                                new Date(
+                                  medication.lastTakenAt
+                                ).toDateString() === new Date().toDateString()
+                              ? "success"
+                              : "warning"
                         }
                         size="small"
                         sx={{ ml: 1 }}

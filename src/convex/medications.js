@@ -60,7 +60,8 @@ export const addMedication = mutation({
       reminderType,
       ...medicationData,
       isCompleted: false,
-      lastNotified: 0, // Changed from null to 0
+      lastNotified: 0,
+      lastTakenAt: 0,
     });
 
     // Schedule reminders (will be handled by a scheduled function)
@@ -82,10 +83,39 @@ export const getMedications = query({
     userId: v.id("users"),
   },
   handler: async (ctx, { userId }) => {
-    return await ctx.db
+    const medications = await ctx.db
       .query("medications")
       .withIndex("by_userId", (q) => q.eq("userId", userId))
       .collect();
+
+    // Process medications to determine if they should be shown today
+    const now = Date.now();
+    return medications.map((med) => {
+      // Add a computed property to determine if medication needs to be taken today
+      let needsTakingToday = true;
+
+      if (med.reminderType === "one-time") {
+        // One-time medications just respect their isCompleted flag
+        needsTakingToday = !med.isCompleted;
+      } else if (med.reminderType === "recurring") {
+        // For recurring medications, check if it was already taken today
+        if (med.lastTakenAt) {
+          const lastTakenDate = new Date(med.lastTakenAt);
+          const today = new Date(now);
+
+          needsTakingToday = !(
+            lastTakenDate.getFullYear() === today.getFullYear() &&
+            lastTakenDate.getMonth() === today.getMonth() &&
+            lastTakenDate.getDate() === today.getDate()
+          );
+        }
+      }
+
+      return {
+        ...med,
+        needsTakingToday,
+      };
+    });
   },
 });
 
@@ -114,14 +144,21 @@ export const markMedicationAsDone = mutation({
       medicationId,
       userId,
       takenAt: now,
-      wasOnTime: true, // This could be calculated based on scheduled time
+      wasOnTime: true,
       notes,
     });
 
     // For one-time medications, mark as completed
+
     if (medication.reminderType === "one-time") {
       await ctx.db.patch(medicationId, {
         isCompleted: true,
+        lastTakenAt: now,
+      });
+    } else {
+      // For recurring medications,update the lastTakenAt time
+      await ctx.db.patch(medicationId, {
+        lastTakenAt: now,
       });
     }
 

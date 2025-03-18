@@ -20,7 +20,6 @@ export const register = mutation({
       throw new ConvexError("User with this email already exists");
     }
 
-    // Hash the password (simple implementation - use a better one in production)
     const passwordHash = await hashPassword(password);
 
     // Create a new user
@@ -96,7 +95,6 @@ export const me = query({
       .filter((q) => q.field("sessions") !== undefined)
       .collect();
 
-    // Ensure sessions is an array before calling `.some()`
     const user = users.find(
       (user) =>
         Array.isArray(user.sessions) &&
@@ -108,7 +106,7 @@ export const me = query({
     }
 
     return {
-      _id: user._id, // Include _id in the return value
+      _id: user._id,
       name: user.name,
       email: user.email,
     };
@@ -159,7 +157,7 @@ export const logout = mutation({
     sessionId: v.string(),
   },
   handler: async (ctx, { sessionId }) => {
-    // Find user with this session using the proper approach
+    // Find user with this session
     const users = await ctx.db
       .query("users")
       .filter((q) => q.field("sessions") !== undefined)
@@ -194,7 +192,7 @@ export const logoutAll = mutation({
     sessionId: v.string(),
   },
   handler: async (ctx, { sessionId }) => {
-    // Find user with this session using the proper approach
+    // Find user with this session
     const users = await ctx.db
       .query("users")
       .filter((q) => q.field("sessions") !== undefined)
@@ -256,10 +254,7 @@ export const logoutOthers = mutation({
 });
 
 // Helper function for password hashing
-// This is a simplified version - in production, use a better solution
 async function hashPassword(password) {
-  // Simple hash function that's compatible with Convex
-  // In a real app, you'd want something more secure
   const encoder = new TextEncoder();
   const data = encoder.encode(password + "some-salt-value");
   const hashBuffer = await crypto.subtle.digest("SHA-256", data);
@@ -270,13 +265,13 @@ async function hashPassword(password) {
   return hashHex;
 }
 
-// Helper function for password comparison
+// password comparison
 async function comparePassword(password, hash) {
   const newHash = await hashPassword(password);
   return newHash === hash;
 }
 
-// Helper function to generate a session ID
+// function to generate a session ID
 function generateSessionId() {
   // Generate a random session ID
   const array = new Uint8Array(16);

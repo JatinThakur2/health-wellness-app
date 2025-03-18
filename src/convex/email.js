@@ -13,12 +13,8 @@ export const processEmailQueue = internalMutation({
 
     for (const email of pendingEmails) {
       try {
-        // In a production app, you would integrate with an email service like SendGrid, Mailgun, etc.
         // For this example, we'll just mark emails as "sent" without actually sending them
         console.log(`Would send email to ${email.email}: ${email.subject}`);
-
-        // In a real implementation, you'd have code like:
-        // await sendEmailViaSendGrid(email.email, email.subject, email.body, email.attachments);
 
         // Update email status to sent
         await ctx.db.patch(email._id, {

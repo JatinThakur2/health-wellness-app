@@ -179,7 +179,6 @@ function getNextReminderTime(
   const now = Date.now();
   let nextDate = new Date(Math.max(startDate, lastNotified));
 
-  // Parse the reminder time
   const [hours, minutes] = reminderTime.split(":").map(Number);
 
   // Set the time

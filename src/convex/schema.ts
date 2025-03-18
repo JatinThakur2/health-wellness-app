@@ -42,6 +42,7 @@ export default defineSchema({
     endDate: v.optional(v.number()), // Unix timestamp
     reminderTimes: v.optional(v.array(v.string())), // Array of HH:MM strings
     lastNotified: v.optional(v.number()), // Unix timestamp for last notification
+    lastTakenAt: v.optional(v.number()), // Add this field for tracking when medication was last taken
   })
     .index("by_userId", ["userId"])
     .index("by_reminder_type", ["reminderType"])
@@ -59,7 +60,7 @@ export default defineSchema({
     userId: v.id("users"),
     generatedAt: v.number(), // Unix timestamp
     reportType: v.string(),
-    reportUrl: v.optional(v.string()), // URL to the generated report file
+    reportUrl: v.optional(v.string()),
     status: v.union(
       v.literal("pending"),
       v.literal("processing"),

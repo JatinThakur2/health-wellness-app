@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useMutation } from "convex/react";
-import { api } from "../../convexClient"; // Use our proxy file
+import { api } from "../../convexClient";
 import { useAuth } from "../auth/AuthContext";
 import {
   Box,
@@ -15,11 +15,11 @@ import {
   MenuItem,
   Select,
   Paper,
-  Grid,
   InputLabel,
   Snackbar,
   Alert,
 } from "@mui/material";
+import Grid from "@mui/material/Grid2";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import {
   LocalizationProvider,

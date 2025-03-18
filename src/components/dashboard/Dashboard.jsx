@@ -12,11 +12,6 @@ import {
   ListItemText,
   ListItemIcon,
   Divider,
-  AppBar,
-  Toolbar,
-  IconButton,
-  Menu,
-  MenuItem,
   Dialog,
   DialogActions,
   DialogContent,
@@ -27,21 +22,13 @@ import {
   Alert,
 } from "@mui/material";
 import Grid from "@mui/material/Grid2";
-import {
-  MedicationOutlined,
-  AssessmentOutlined,
-  AccountCircle,
-  LogoutOutlined,
-  ExitToApp,
-} from "@mui/icons-material";
+import { MedicationOutlined, AssessmentOutlined } from "@mui/icons-material";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convexClient";
 import { useAuth } from "../auth/AuthContext";
 
 const Dashboard = () => {
-  const [anchorEl, setAnchorEl] = useState(null);
-  const isMenuOpen = Boolean(anchorEl);
-  const { user, logout: authLogout, sessionId } = useAuth();
+  const { user } = useAuth();
 
   // Move these inside the component function
   const [markAsTakenDialogOpen, setMarkAsTakenDialogOpen] = useState(false);
@@ -60,9 +47,6 @@ const Dashboard = () => {
     user ? { userId: user._id } : "skip"
   );
 
-  const logoutMutation = useMutation(api.auth.logout);
-  const logoutAll = useMutation(api.auth.logoutAll);
-  const logoutOthers = useMutation(api.auth.logoutOthers);
   const markMedicationAsDone = useMutation(
     api.medications.markMedicationAsDone
   );
@@ -105,46 +89,13 @@ const Dashboard = () => {
     setSnackbarOpen(false);
   };
 
-  const handleProfileMenuOpen = (event) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-  };
-
-  const handleLogout = async () => {
-    try {
-      await logoutMutation({ sessionId });
-      authLogout(); // Clear local storage and context
-    } catch (error) {
-      console.error("Logout failed:", error);
-    }
-    handleMenuClose();
-  };
-
-  const handleLogoutAll = async () => {
-    try {
-      await logoutAll({ sessionId });
-      authLogout(); // Clear local storage and context
-    } catch (error) {
-      console.error("Logout from all devices failed:", error);
-    }
-    handleMenuClose();
-  };
-
-  const handleLogoutOthers = async () => {
-    try {
-      await logoutOthers({ sessionId });
-      // Stay logged in on current device
-    } catch (error) {
-      console.error("Logout from other devices failed:", error);
-    }
-    handleMenuClose();
-  };
-
   // Today's medications
   const todayMedications = medications?.filter((med) => {
+    // First check if this medication needs taking today (already filtered in the backend)
+    if (!med.needsTakingToday) {
+      return false;
+    }
+
     if (med.reminderType === "one-time") {
       const medicationDate = new Date(med.reminderDate);
       const today = new Date();
@@ -186,64 +137,14 @@ const Dashboard = () => {
     return false;
   });
 
-  const renderMenu = (
-    <Menu
-      anchorEl={anchorEl}
-      anchorOrigin={{ vertical: "top", horizontal: "right" }}
-      keepMounted
-      transformOrigin={{ vertical: "top", horizontal: "right" }}
-      open={isMenuOpen}
-      onClose={handleMenuClose}
-    >
-      <MenuItem onClick={handleLogout}>
-        <ListItemIcon>
-          <ExitToApp fontSize="small" />
-        </ListItemIcon>
-        <ListItemText>Logout</ListItemText>
-      </MenuItem>
-      <MenuItem onClick={handleLogoutAll}>
-        <ListItemIcon>
-          <LogoutOutlined fontSize="small" />
-        </ListItemIcon>
-        <ListItemText>Logout from all devices</ListItemText>
-      </MenuItem>
-      <MenuItem onClick={handleLogoutOthers}>
-        <ListItemIcon>
-          <LogoutOutlined fontSize="small" />
-        </ListItemIcon>
-        <ListItemText>Logout from other devices</ListItemText>
-      </MenuItem>
-    </Menu>
-  );
-
   return (
     <>
-      <AppBar position="static">
-        <Toolbar>
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            Health & Wellness
-          </Typography>
-          <IconButton
-            size="large"
-            edge="end"
-            aria-label="account of current user"
-            aria-haspopup="true"
-            onClick={handleProfileMenuOpen}
-            color="inherit"
-          >
-            <AccountCircle />
-          </IconButton>
-        </Toolbar>
-      </AppBar>
-      {renderMenu}
-
       <Container sx={{ mt: 4 }}>
         <Typography variant="h4" gutterBottom>
           Hello, {user?.name}
         </Typography>
 
         <Grid container spacing={3}>
-          {/* Today's Medications */}
           <Grid item xs={12} md={6}>
             <Card>
               <CardContent>
@@ -316,7 +217,6 @@ const Dashboard = () => {
             </Card>
           </Grid>
 
-          {/* Recent Reports */}
           <Grid item xs={12} md={6}>
             <Card>
               <CardContent>
@@ -388,7 +288,6 @@ const Dashboard = () => {
         </Grid>
       </Container>
 
-      {/* Mark as Taken Dialog - move outside the map function */}
       <Dialog open={markAsTakenDialogOpen} onClose={handleMarkAsTakenCancel}>
         <DialogTitle>Mark as Taken</DialogTitle>
         <DialogContent>
@@ -421,7 +320,6 @@ const Dashboard = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Snackbar for notifications - move outside the map function */}
       <Snackbar
         open={snackbarOpen}
         autoHideDuration={6000}

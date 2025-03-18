@@ -1,11 +1,10 @@
 "use node";
-import { query, internalAction, action } from "../_generated/server";
+import { internalAction, action } from "../_generated/server";
 import { v } from "convex/values";
 import { internal } from "../_generated/api";
 
 import { createObjectCsvStringifier } from "csv-writer";
 
-// Request a new report
 export const requestReport = action({
   args: {
     userId: v.id("users"),
@@ -13,32 +12,45 @@ export const requestReport = action({
     startDate: v.optional(v.number()),
     endDate: v.optional(v.number()),
   },
-  handler: async (ctx, { userId, reportType, startDate, endDate }) => {
-    // Create a report record
-    const reportId = await ctx.db.insert("reports", {
-      userId,
-      generatedAt: Date.now(),
-      reportType,
-      status: "pending",
-    });
+  handler: async (ctx, args) => {
+    console.log("Context object:", JSON.stringify(ctx, null, 2));
+    console.log("Has DB?", !!ctx.db);
+    console.log(
+      "DB methods:",
+      ctx.db ? Object.keys(ctx.db) : "DB is undefined"
+    );
 
-    // Schedule report generation
-    if (reportType === "weekly") {
-      await ctx.scheduler.runAfter(0, internal.reports.generateWeeklyReport, {
+    const { userId, reportType, startDate, endDate } = args;
+
+    try {
+      // Create a report record
+      const reportId = await ctx.db.insert("reports", {
         userId,
-        reportId,
+        generatedAt: Date.now(),
+        reportType,
+        status: "pending",
       });
-    } else {
-      // For custom date range reports
-      await ctx.scheduler.runAfter(0, internal.reports.generateCustomReport, {
-        userId,
-        reportId,
-        startDate,
-        endDate,
-      });
+      // Schedule report generation
+      if (reportType === "weekly") {
+        await ctx.scheduler.runAfter(0, internal.reports.generateWeeklyReport, {
+          userId,
+          reportId,
+        });
+      } else {
+        // For custom date range reports
+        await ctx.scheduler.runAfter(0, internal.reports.generateCustomReport, {
+          userId,
+          reportId,
+          startDate,
+          endDate,
+        });
+      }
+
+      return reportId;
+    } catch (error) {
+      console.error("Error details:", error);
+      throw new Error(`Failed to insert report: ${error.message}`);
     }
-
-    return reportId;
   },
 });
 // Generate a weekly report for a user
@@ -110,11 +122,9 @@ export const generateWeeklyReport = internalAction({
         csvStringifier.getHeaderString() +
         csvStringifier.stringifyRecords(reportData);
 
-      // For simplicity, we'll use Convex storage to store the CSV
-      // In a real app, you might want to use Cloudinary or S3
       const storageId = await ctx.storage.store(csvString);
       const reportUrl = await ctx.storage.getUrl(storageId);
-      // Update report with URL
+
       await ctx.db.patch(reportId, {
         reportUrl,
         status: "completed",
@@ -149,8 +159,6 @@ export const generateWeeklyReport = internalAction({
     }
   },
 });
-
-// Request a new report
 
 // Generate a custom report for a user
 export const generateCustomReport = internalAction({
@@ -233,7 +241,6 @@ export const generateCustomReport = internalAction({
       const storageId = await ctx.storage.store(csvString);
       const reportUrl = await ctx.storage.getUrl(storageId);
 
-      // Update report with URL
       await ctx.db.patch(reportId, {
         reportUrl,
         status: "completed",

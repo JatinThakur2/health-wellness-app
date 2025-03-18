@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useQuery, useMutation } from "convex/react";
+import { useQuery, useAction } from "convex/react";
 import {
   Box,
   Typography,
@@ -21,7 +21,6 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  TextField,
   CircularProgress,
   Alert,
   IconButton,
@@ -43,10 +42,9 @@ const ReportsList = () => {
 
   const reports =
     useQuery(api.reports.getReports, userId ? { userId } : "skip") || [];
-  // Changed from useAction to useMutation
-  const requestReport = useMutation(api.reports.requestReport);
 
-  // State for the new report dialog
+  const requestReport = useAction(api.actions.reportsAction.requestReport);
+
   const [openDialog, setOpenDialog] = useState(false);
   const [reportType, setReportType] = useState("weekly");
   const [startDate, setStartDate] = useState(null);
@@ -273,14 +271,14 @@ const ReportsList = () => {
                   label="Start Date"
                   value={startDate}
                   onChange={(newValue) => setStartDate(newValue)}
-                  renderInput={(params) => <TextField {...params} fullWidth />}
+                  slotProps={{ textField: { fullWidth: true } }}
                   maxDate={endDate || undefined}
                 />
                 <DatePicker
                   label="End Date"
                   value={endDate}
                   onChange={(newValue) => setEndDate(newValue)}
-                  renderInput={(params) => <TextField {...params} fullWidth />}
+                  slotProps={{ textField: { fullWidth: true } }}
                   minDate={startDate || undefined}
                   maxDate={new Date()}
                 />
@@ -308,11 +306,5 @@ const ReportsList = () => {
     </Box>
   );
 };
-console.log("Available API actions:", api);
-// In ReportsList.jsx, temporarily add:
-console.log("API structure:", JSON.stringify(Object.keys(api), null, 2));
-console.log(
-  "Action structure:",
-  JSON.stringify(Object.keys(api.action || {}), null, 2)
-);
+
 export default ReportsList;

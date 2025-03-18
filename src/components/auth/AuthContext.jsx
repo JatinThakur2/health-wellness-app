@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState } from "react";
 import { useQuery } from "convex/react";
-import { api } from "../../convexClient"; // Import from our proxy file
+import { api } from "../../convexClient";
 
 const AuthContext = createContext();
 

@@ -26,7 +26,6 @@ const Register = () => {
     e.preventDefault();
     setError("");
 
-    // Basic validation
     if (password !== confirmPassword) {
       setError("Passwords do not match");
       return;

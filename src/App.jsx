@@ -9,7 +9,7 @@ import { ThemeProvider, createTheme } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import ConvexClientProvider from "./ConvexClientProvider";
 import { AuthProvider, useAuth } from "./components/auth/AuthContext";
-
+import Navbar from "./components/dashboard/Navbar";
 // Import components
 import Login from "./components/auth/Login";
 import Register from "./components/auth/Register";
@@ -30,7 +30,6 @@ const theme = createTheme({
   },
 });
 
-// Protected route component that uses the AuthContext
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, isLoading } = useAuth();
 
@@ -45,6 +44,16 @@ const ProtectedRoute = ({ children }) => {
   return children;
 };
 
+// Layout component that includes Navbar and children
+const Layout = ({ children }) => {
+  return (
+    <>
+      <Navbar />
+      {children}
+    </>
+  );
+};
+
 function AppRoutes() {
   return (
     <Router>
@@ -55,7 +64,9 @@ function AppRoutes() {
           path="/"
           element={
             <ProtectedRoute>
-              <Dashboard />
+              <Layout>
+                <Dashboard />
+              </Layout>
             </ProtectedRoute>
           }
         />
@@ -63,7 +74,9 @@ function AppRoutes() {
           path="/medications"
           element={
             <ProtectedRoute>
-              <MedicationList />
+              <Layout>
+                <MedicationList />
+              </Layout>
             </ProtectedRoute>
           }
         />
@@ -71,7 +84,9 @@ function AppRoutes() {
           path="/add-medication"
           element={
             <ProtectedRoute>
-              <AddMedication />
+              <Layout>
+                <AddMedication />
+              </Layout>
             </ProtectedRoute>
           }
         />
@@ -79,7 +94,9 @@ function AppRoutes() {
           path="/reports"
           element={
             <ProtectedRoute>
-              <ReportsList />
+              <Layout>
+                <ReportsList />
+              </Layout>
             </ProtectedRoute>
           }
         />
