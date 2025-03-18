@@ -20,7 +20,7 @@ import {
   Alert,
 } from "@mui/material";
 import Grid from "@mui/material/Grid2";
-import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
+import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFnsV3";
 import {
   LocalizationProvider,
   DatePicker,

@@ -1,0 +1,17 @@
+version: "3"
+
+services:
+  health-wellness-app:
+    build: .
+    ports:
+      - "3000:3000" # React app
+      - "8000:8000" # Convex dev server
+    environment:
+      - NODE_ENV=development
+      - CONVEX_DEPLOYMENT=${CONVEX_DEPLOYMENT}
+      - CONVEX_URL=${CONVEX_URL}
+    volumes:
+      - .:/app
+      - /app/node_modules
+    stdin_open: true # Required for React DevTools
+    tty: true # Required for React DevTools
